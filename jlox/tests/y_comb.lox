@@ -1,0 +1,35 @@
+
+fun y(f) {
+    fun apply(f) {
+        return f(f);
+    }
+
+    fun run(x) {
+        fun step(a, b) {
+            return x(x)(a, b);
+        }
+
+        return f(step);
+    }
+
+    return apply(run);
+}
+
+fun fact(n) {
+    fun rec(f) {
+        fun helper(n, t) {
+            if (n == 1) return t;
+
+            return f(n - 1, t * n);
+        }
+
+        return helper;
+    }
+
+    return y(rec)(n, 1);
+}
+
+for (var i = 1; i <= 10; i = i + 1) {
+    print fact(i);
+}
+
