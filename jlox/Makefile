@@ -16,10 +16,11 @@ all : out/lox/
 
 clean_build : clean all
 
-tool : out/tool/
-
-out/lox/ : $(SRC)
+out/lox/ : $(SRC) tool
+	cd out; java tool.GenerateAst ../src/lox/
 	$(JC) $(JFLAGS) $(SRC)
+
+tool : out/tool/
 
 out/tool/ : $(TOOL_SRC)
 	$(JC) $(JFLAGS) $(TOOL_SRC)
