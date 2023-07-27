@@ -1,13 +1,12 @@
 package lox;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import lox.TokenType.*;
+import java.util.ArrayList;
 
 class Parser {
-    private static class ParseError extends RuntimeException {}
+    private static class ParseError extends RuntimeException {
+    }
 
     private final List<Token> tokens;
     private int current = 0;
@@ -18,7 +17,7 @@ class Parser {
 
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
-        while(!isAtEnd()) {
+        while (!isAtEnd()) {
             statements.add(declaration());
         }
 
@@ -31,8 +30,12 @@ class Parser {
 
     private Stmt declaration() {
         try {
-            if (match(TokenType.FUN)) return function("function");
-            if (match(TokenType.VAR)) return varDeclaration();
+            if (match(TokenType.CLASS))
+                return classDeclaration();
+            if (match(TokenType.FUN))
+                return function("function");
+            if (match(TokenType.VAR))
+                return varDeclaration();
             return statement();
         } catch (ParseError error) {
             synchronize();
@@ -40,13 +43,33 @@ class Parser {
         }
     }
 
+    private Stmt classDeclaration() {
+        Token name = consume(TokenType.IDENTIFIER, "Expect class name.");
+        consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
+
+        return new Stmt.Class(name, methods);
+    }
+
     private Stmt statement() {
-        if (match(TokenType.FOR)) return forStatement();
-        if (match(TokenType.IF)) return ifStatement();
-        if (match(TokenType.LEFT_BRACE)) return new Stmt.Block(block());
-        if (match(TokenType.PRINT)) return printStatement();
-        if (match(TokenType.RETURN)) return returnStatement();
-        if (match(TokenType.WHILE)) return whileStatement();
+        if (match(TokenType.FOR))
+            return forStatement();
+        if (match(TokenType.IF))
+            return ifStatement();
+        if (match(TokenType.LEFT_BRACE))
+            return new Stmt.Block(block());
+        if (match(TokenType.PRINT))
+            return printStatement();
+        if (match(TokenType.RETURN))
+            return returnStatement();
+        if (match(TokenType.WHILE))
+            return whileStatement();
 
         return expressionStatement();
     }
@@ -78,12 +101,13 @@ class Parser {
 
         if (increment != null) {
             body = new Stmt.Block(
-                Arrays.asList(
-                    body,
-                    new Stmt.Expression(increment)));
+                    Arrays.asList(
+                            body,
+                            new Stmt.Expression(increment)));
         }
 
-        if (condition == null) condition = new Expr.Literal(true);
+        if (condition == null)
+            condition = new Expr.Literal(true);
         body = new Stmt.While(condition, body);
 
         if (initializer != null) {
@@ -192,13 +216,15 @@ class Parser {
             Expr value = assignment();
 
             if (expr instanceof Expr.Variable) {
-                Token name = ((Expr.Variable)expr).name;
+                Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
+            } else if (expr instanceof Expr.Get) {
+                Expr.Get get = (Expr.Get) expr;
+                return new Expr.Set(get.object, get.name, value);
             }
 
             error(equals, "Invalid assignment target.");
         }
-
         return expr;
     }
 
@@ -307,6 +333,9 @@ class Parser {
         while (true) {
             if (match(TokenType.LEFT_PAREN)) {
                 expr = finishCall(expr);
+            } else if (match(TokenType.DOT)) {
+                Token name = consume(TokenType.IDENTIFIER, "Expect property name after '.'.");
+                expr = new Expr.Get(expr, name);
             } else {
                 break;
             }
@@ -316,13 +345,18 @@ class Parser {
     }
 
     private Expr primary() {
-        if (match(TokenType.FALSE)) return new Expr.Literal(false);
-        if (match(TokenType.TRUE)) return new Expr.Literal(true);
-        if (match(TokenType.NIL)) return new Expr.Literal(null);
+        if (match(TokenType.FALSE))
+            return new Expr.Literal(false);
+        if (match(TokenType.TRUE))
+            return new Expr.Literal(true);
+        if (match(TokenType.NIL))
+            return new Expr.Literal(null);
 
         if (match(TokenType.NUMBER, TokenType.STRING)) {
             return new Expr.Literal(previous().literal);
         }
+
+        if (match(TokenType.THIS)) return new Expr.This(previous());
 
         if (match(TokenType.IDENTIFIER)) {
             return new Expr.Variable(previous());
@@ -349,7 +383,8 @@ class Parser {
     }
 
     private Token consume(TokenType type, String message) {
-        if (check(type)) return advance();
+        if (check(type))
+            return advance();
 
         throw error(peek(), message);
     }
@@ -363,7 +398,8 @@ class Parser {
         advance();
 
         while (!isAtEnd()) {
-            if (previous().type == TokenType.SEMICOLON) return;
+            if (previous().type == TokenType.SEMICOLON)
+                return;
 
             switch (peek().type) {
                 case CLASS:
@@ -382,12 +418,14 @@ class Parser {
     }
 
     private boolean check(TokenType type) {
-        if (isAtEnd()) return false;
+        if (isAtEnd())
+            return false;
         return peek().type == type;
     }
 
     private Token advance() {
-        if (!isAtEnd()) current++;
+        if (!isAtEnd())
+            current++;
         return previous();
     }
 
