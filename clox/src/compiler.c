@@ -598,6 +598,7 @@ ParseRule rules[] = {
     [TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE},
     [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
     [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_CONTROL]       = {NULL,     NULL,   PREC_NONE},
     [TOKEN_ERROR]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
 };
@@ -827,6 +828,13 @@ static void printStatement() {
     emitByte(OP_PRINT);
 }
 
+static void controlStatement() {
+    consume(TOKEN_LEFT_PAREN, "Expect function call syntax for control");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect function call syntax for control");
+    emitByte(OP_CONTROL);
+}
+
 static void returnStatement() {
     if (current->type == TYPE_SCRIPT) {
         error("Can't return from top-level code.");
@@ -900,6 +908,8 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_CONTROL)) {
+        controlStatement();
     } else if (match(TOKEN_FOR)) {
         forStatement();
     } else if (match(TOKEN_IF)) {

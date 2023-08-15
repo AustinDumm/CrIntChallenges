@@ -16,6 +16,18 @@ static Value clockNative(int argCount, Value* args) {
     return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
+static Value genPromptId(int argCount, Value* args) {
+    return vm.currentPromptTag++;
+}
+
+static Value markPrompt(int argCount, Value* args) {
+    Value promptTag = args[0];
+    CallFrame* frame = &vm.frames[vm.frameCount - 1];
+    frame->promptTag = promptTag;
+
+    return promptTag;
+}
+
 static void resetStack() {
     vm.stackTop = vm.stack;
     vm.frameCount = 0;
@@ -56,6 +68,7 @@ static void defineNative(const char* name, NativeFn function) {
 void initVM() {
     resetStack();
     vm.objects = NULL;
+    vm.currentPromptTag  = 1;
 
     vm.bytesAllocated = 0;
     vm.nextGC = 1024 * 1024;
@@ -71,6 +84,8 @@ void initVM() {
     vm.initString = copyString("init", 4);
 
     defineNative("clock", clockNative);
+    defineNative("genPromptId", genPromptId);
+    defineNative("prompt", markPrompt);
 }
 
 void freeVM() {
@@ -108,6 +123,7 @@ static bool call(ObjClosure* closure, int argCount) {
 
     CallFrame* frame = &vm.frames[vm.frameCount++];
     frame->closure = closure;
+    frame->promptTag = 0;
     frame->ip = closure->function->chunk.code;
     frame->slots = vm.stackTop - argCount - 1;
     return true;
@@ -235,6 +251,31 @@ static void defineMethod(ObjString* name) {
     ObjClass* klass = AS_CLASS(peek(1));
     tableSet(&klass->methods, name, method);
     pop();
+}
+
+static CallFrame* findPromptFrame(Value promptTag) {
+    for (CallFrame* frame = &vm.frames[vm.frameCount - 1]; frame >= vm.frames; --frame)
+        if (frame->promptTag == promptTag)
+            return frame;
+
+    return NULL;
+}
+
+static bool handleControl(Value promptTag, Value continuationClosure) {
+    if (!IS_OBJ(continuationClosure) || !IS_CLOSURE(continuationClosure)) {
+        runtimeError("Control must be given closure to continue execution");
+        return false;
+    }
+
+    ObjClosure* closure = AS_CLOSURE(continuationClosure);
+
+    CallFrame* promptFrame = findPromptFrame(promptTag);
+    if (promptFrame == NULL) {
+        runtimeError("Could not find call frame with prompt tag: %i", promptTag);
+        return false;
+    }
+
+    return true;
 }
 
 static bool isFalsey(Value value) {
@@ -525,6 +566,11 @@ static InterpretResult run() {
             }
             case OP_METHOD:
                 defineMethod(READ_STRING());
+                break;
+            case OP_CONTROL:
+                if (!handleControl(pop(), pop())) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
                 break;
         }
     }

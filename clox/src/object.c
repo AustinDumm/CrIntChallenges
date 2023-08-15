@@ -54,6 +54,21 @@ ObjClosure* newClosure(ObjFunction* function) {
     return closure;
 }
 
+// Make this take in a pointer to the prompt call frame and a count
+// Allocate a list of frames and copy all frames from source into alloc
+// Return a pointer to the continuation that stores these heap frames
+//
+// Update the VM to, after creating the continuation, pop all of the
+// frames off of the stack that are prompted and then start up the
+// closure passed into "Control" with this continuation object as the
+// parameter.
+//
+// Update VM to, when the continuation item is called, copy each of the
+// frames out of this continuation onto the vm stack again and then start
+// execution from the new top of the stack's closure.
+ObjContinuation* newContinuation() {
+}
+
 ObjFunction* newFunction() {
     ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
     function->arity = 0;

@@ -11,6 +11,7 @@
 #define IS_BOUND_METHOD(value)   isObjType(value, OBJ_BOUND_METHOD)
 #define IS_CLASS(value)          isObjType(value, OBJ_CLASS)
 #define IS_CLOSURE(value)        isObjType(value, OBJ_CLOSURE)
+#define IS_CONTINUATION(value)   isObjTyoe(value, OBJ_CONTINUATION)
 #define IS_FUNCTION(value)       isObjType(value, OBJ_FUNCTION)
 #define IS_INSTANCE(value)       isObjType(value, OBJ_INSTANCE)
 #define IS_NATIVE(value)         isObjType(value, OBJ_NATIVE)
@@ -19,6 +20,7 @@
 #define AS_BOUND_METHOD(value)   ((ObjBoundMethod*)AS_OBJ(value))
 #define AS_CLASS(value)          ((ObjClass*)AS_OBJ(value))
 #define AS_CLOSURE(value)        ((ObjClosure*)AS_OBJ(value))
+#define AS_CONTINUATION(value)   ((ObjContinuation*)AS_OBJ(value))
 #define AS_FUNCTION(value)       ((ObjFunction*)AS_OBJ(value))
 #define AS_INSTANCE(value)       ((ObjInstance*)AS_OBJ(value))
 #define AS_NATIVE(value) \
@@ -30,6 +32,7 @@ typedef enum {
     OBJ_BOUND_METHOD,
     OBJ_CLASS,
     OBJ_CLOSURE,
+    OBJ_CONTINUATION,
     OBJ_FUNCTION,
     OBJ_INSTANCE,
     OBJ_NATIVE,
@@ -97,9 +100,17 @@ typedef struct {
     ObjClosure* method;
 } ObjBoundMethod;
 
+typedef struct CallFrame CallFrame;
+typedef struct {
+    Obj obj;
+    int frameCount;
+    CallFrame* frames;
+} ObjContinuation;
+
 ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
 ObjClass* newClass(ObjString* name);
 ObjClosure* newClosure(ObjFunction* function);
+ObjContinuation* newContinuation();
 ObjFunction* newFunction();
 ObjInstance* newInstance(ObjClass* klass);
 ObjNative* newNative(NativeFn function);

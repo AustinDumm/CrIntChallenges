@@ -8,7 +8,8 @@
 #define FRAMES_MAX 64
 #define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
 
-typedef struct {
+typedef struct CallFrame {
+    uint64_t promptTag;
     ObjClosure* closure;
     uint8_t* ip;
     Value* slots;
@@ -17,6 +18,7 @@ typedef struct {
 typedef struct {
     CallFrame frames[FRAMES_MAX];
     int frameCount;
+    uint64_t currentPromptTag;
 
     Value stack[STACK_MAX];
     Value* stackTop;
